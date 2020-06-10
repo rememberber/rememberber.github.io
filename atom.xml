@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://rememberber.github.io</id>
     <title>萝卜墩儿</title>
-    <updated>2020-06-10T05:58:51.522Z</updated>
+    <updated>2020-06-10T13:12:07.432Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://rememberber.github.io"/>
     <link rel="self" href="https://rememberber.github.io/atom.xml"/>
@@ -10,6 +10,153 @@
     <logo>https://rememberber.github.io/images/avatar.png</logo>
     <icon>https://rememberber.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, 萝卜墩儿</rights>
+    <entry>
+        <title type="html"><![CDATA[递归解析Json，实现生成可视化Tree+快速获取JsonPath]]></title>
+        <id>https://rememberber.github.io/post/di-gui-jie-xi-jsonshi-xian-sheng-cheng-ke-shi-hua-treekuai-su-huo-qu-jsonpath/</id>
+        <link href="https://rememberber.github.io/post/di-gui-jie-xi-jsonshi-xian-sheng-cheng-ke-shi-hua-treekuai-su-huo-qu-jsonpath/">
+        </link>
+        <updated>2020-06-10T12:46:48.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="1利用jsonpath读取根获取jsonobject">1.利用JsonPath读取根，获取JsonObject</h2>
+<p>示例Json：</p>
+<pre><code class="language-json">{
+  &quot;errorMessage&quot;: null,
+  &quot;errorCode&quot;: null,
+  &quot;dates&quot;: {
+    &quot;tradeAmt&quot;: null,
+    &quot;riskLevel&quot;: &quot;LEVEL30&quot;,
+    &quot;optSelected&quot;: {
+      &quot;77&quot;: [
+        {
+          &quot;optionContent&quot;: &quot;20-50万元&quot;,
+          &quot;productCode&quot;: null,
+          &quot;created&quot;: null,
+          &quot;optionOrder&quot;: null,
+          &quot;modified&quot;: null,
+          &quot;id&quot;: 361,
+          &quot;optionScore&quot;: 8,
+          &quot;isInvalid&quot;: 1
+        }
+      ],
+      &quot;78&quot;: [
+        {
+          &quot;optionContent&quot;: &quot;资产50-500万元，无债务或债务较轻&quot;,
+          &quot;productCode&quot;: null,
+          &quot;created&quot;: null,
+          &quot;optionOrder&quot;: null,
+          &quot;modified&quot;: null,
+          &quot;id&quot;: 365,
+          &quot;optionScore&quot;: 6,
+          &quot;isInvalid&quot;: 1
+        }
+      ]
+    },
+    &quot;riskInfoResult&quot;: {
+      &quot;optLetter&quot;: &quot;A&quot;,
+      &quot;mqOrder&quot;: &quot;1&quot;,
+      &quot;residenceCountryCode&quot;: null,
+      &quot;taxReason&quot;: null,
+      &quot;residenceCountryName&quot;: null,
+      &quot;residenceCountryNameEn&quot;: null,
+      &quot;countryNameEn&quot;: null,
+      &quot;taxInfoCode&quot;: null,
+      &quot;taxInfoIsCompleted&quot;: true,
+      &quot;taxInfoIsRight&quot;: true,
+      &quot;countryCode&quot;: null,
+      &quot;taxId&quot;: null,
+      &quot;countryName&quot;: null,
+      &quot;taxReasonInt&quot;: null
+    },
+    &quot;created&quot;: 1565654328000,
+    &quot;questions&quot;: [
+      {
+        &quot;questionContent&quot;: &quot;您的职业？&quot;,
+        &quot;productCode&quot;: null,
+        &quot;created&quot;: 1498630051000,
+        &quot;options&quot;: null,
+        &quot;questionSource&quot;: &quot;BUSINESS&quot;,
+        &quot;modified&quot;: 1498630051000,
+        &quot;id&quot;: 75,
+        &quot;isInvalid&quot;: 1,
+        &quot;questionType&quot;: 1,
+        &quot;order&quot;: 1
+      },
+      {
+        &quot;questionContent&quot;: &quot;您的主要收入来源是？&quot;,
+        &quot;productCode&quot;: null,
+        &quot;created&quot;: 1498630051000,
+        &quot;options&quot;: null,
+        &quot;questionSource&quot;: &quot;BUSINESS&quot;,
+        &quot;modified&quot;: 1498630051000,
+        &quot;id&quot;: 76,
+        &quot;isInvalid&quot;: 1,
+        &quot;questionType&quot;: 1,
+        &quot;order&quot;: 2
+      }
+    ],
+    &quot;serialCode&quot;: &quot;123&quot;,
+    &quot;isInvalid&quot;: 1,
+    &quot;expireTime&quot;: 1628783999000,
+    &quot;productCode&quot;: null,
+    &quot;modified&quot;: 1565654328000,
+    &quot;examScore&quot;: 56,
+    &quot;id&quot;: 4564568,
+    &quot;results&quot;: {
+      &quot;77&quot;: &quot;361&quot;,
+      &quot;78&quot;: &quot;365&quot;
+    },
+    &quot;account&quot;: &quot;test&quot;
+  },
+  &quot;status&quot;: &quot;SUCCESS&quot;
+}
+</code></pre>
+<p>Java代码：</p>
+<pre><code class="language-java">String jsonStr = &quot;&quot;;
+Object rootJson = JsonPath.read(jsonStr, &quot;$&quot;);
+</code></pre>
+<h2 id="2递归层次遍历jsonobjec保存结点信息">2.递归层次遍历JsonObjec，保存结点信息</h2>
+<p>Java代码</p>
+<pre><code class="language-java">ZTreeNode zTreeNode = new ZTreeNode();
+zTreeNode.setId(&quot;$&quot;);
+zTreeNode.setpId(&quot;root&quot;);
+zTreeNode.setName(&quot;root&quot;);
+zTreeNode.setDepth(0);
+zTreeNode.setPath(&quot;$&quot;);
+traverseTree(rootJson, zTreeNode, zTreeNodes);
+</code></pre>
+<pre><code class="language-java">    public static void traverseTree(Object rootJson, ZTreeNode zTreeNode, List&lt;ZTreeNode&gt; zTreeNodes) {
+        if (rootJson instanceof Map) {
+            for (Map.Entry&lt;String, Object&gt; stringObjectEntry : ((Map&lt;String, Object&gt;) rootJson).entrySet()) {
+                ZTreeNode zTreeNodeTemp = new ZTreeNode();
+                zTreeNodeTemp.setDepth(zTreeNode.getDepth() + 1);
+                zTreeNodeTemp.setPath(zTreeNode.getPath() + &quot;.&quot; + stringObjectEntry.getKey());
+                zTreeNodeTemp.setId(zTreeNodeTemp.getPath());
+                zTreeNodeTemp.setName(stringObjectEntry.getKey());
+                zTreeNodeTemp.setpId(zTreeNode.getPath());
+                zTreeNodes.add(zTreeNodeTemp);
+                traverseTree(stringObjectEntry.getValue(), zTreeNodeTemp, zTreeNodes);
+            }
+        } else if (rootJson instanceof List) {
+            List json = (List) rootJson;
+            for (int i = 0; i &lt; json.size(); i++) {
+                Object obj = json.get(i);
+                ZTreeNode zTreeNodeTemp = new ZTreeNode();
+                zTreeNodeTemp.setDepth(zTreeNode.getDepth() + 1);
+                zTreeNodeTemp.setPath(zTreeNode.getPath() + &quot;[&quot; + i + &quot;]&quot;);
+                zTreeNodeTemp.setId(zTreeNodeTemp.getPath());
+                zTreeNodeTemp.setName(zTreeNode.getName() + &quot;[&quot; + i + &quot;]&quot;);
+                zTreeNodeTemp.setpId(zTreeNode.getPath());
+                zTreeNodes.add(zTreeNodeTemp);
+                traverseTree(obj, zTreeNodeTemp, zTreeNodes);
+            }
+        } else {
+//            do nothing
+        }
+    }
+</code></pre>
+<h2 id="3利用ztree展示结点为可视化树点击对应树的结点即可获取对应结点的jsonpath">3.利用zTree展示结点为可视化树，点击对应树的结点即可获取对应结点的JsonPath</h2>
+<figure data-type="image" tabindex="1"><img src="https://rememberber.github.io/post-images/1591794506788.png" alt="" loading="lazy"></figure>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[桌面应用开发漫谈]]></title>
         <id>https://rememberber.github.io/post/zhuo-mian-ying-yong-kai-fa-man-tan/</id>
